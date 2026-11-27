@@ -44,16 +44,50 @@ test('every incomplete-text entry still matches its field', () => {
   let matched = 0;
   for (const record of tests) matched += Catalog.incompleteFields(record).length;
   const listed = Object.values(incomplete).reduce((sum, entries) => sum + entries.length, 0);
-  assert.equal(listed, 266);
+  assert.equal(listed, 254);
   assert.equal(matched, listed);
-  assert.equal(Object.keys(incomplete).length, 193);
+  assert.equal(Object.keys(incomplete).length, 188);
 });
 
-test('warns in copied text, strips bold markers and drops the warning once the field is completed', () => {
+test('completes only the fields whose continuation exists elsewhere in the source file', () => {
+  const { Catalog } = loadCatalog();
+  const tests = new Map(Catalog.normalizeCatalog(data).map((item) => [item.id, item]));
+  const endings = {
+    97: ['indic_paciente', 'La orina debe mantenerse en refrigeración.'],
+    111: ['indic_paciente', 'La orina debe mantenerse en refrigeración.'],
+    140: ['indic_paciente', 'La orina debe mantenerse en refrigeración.'],
+    145: ['indic_paciente', 'La orina debe mantenerse en refrigeración.'],
+    190: ['obs_toma', 'en las muestras de fluidos.'],
+    191: ['obs_toma', 'en las muestras de fluidos.'],
+    199: ['obs_toma', 'garantizando la cadena de frío en todo momento.'],
+    552: ['proc_toma', 'realizar la misma toma.']
+  };
+  for (const [id, [key, ending]] of Object.entries(endings)) {
+    const record = tests.get(Number(id));
+    assert.ok(record[key].replace(/\*\*/g, '').endsWith(ending), id);
+    assert.ok(!Catalog.incompleteFields(record).some((field) => field.key === key), id);
+  }
+});
+
+test('keeps unit and character notation consistent', () => {
+  const skipped = new Set(['codigo_digitacion', 'contacto', 'revisado_por', 'equipo_automatizado', 'nombre', 'perfil', 'control_interno', 'control_externo']);
+  for (const record of data) {
+    for (const [key, value] of Object.entries(record)) {
+      if (typeof value !== 'string') continue;
+      assert.equal(value, value.normalize('NFC'), `${record.id} ${key}`);
+      assert.ok(!/[\u02c2\u02c3\u2011\u00aa]/.test(value), `${record.id} ${key}`);
+      if (skipped.has(key)) continue;
+      assert.ok(!/(?<![A-Za-zµ])(ml|dl|ul|ug|hrs)(?![A-Za-z])/.test(value), `${record.id} ${key}`);
+      assert.ok(!/\dº ?C|\d°C|\d ?C(?![A-Za-zÁÉÍÓÚáéíóúñ0-9])/.test(value), `${record.id} ${key}`);
+    }
+  }
+});
+
+test('marks incomplete fields in copied text, strips bold markers and drops the mark once the field is completed', () => {
   const { Catalog } = loadCatalog();
   const record = Catalog.normalizeCatalog(data).find((item) => item.id === 21);
   const text = Catalog.formatTestText(record);
-  assert.match(text, /AVISO: texto incompleto/);
+  assert.match(text, /\[texto incompleto en la fuente\]/);
   assert.ok(!text.includes('**'));
   const completed = { ...record };
   for (const { key } of Catalog.incompleteFields(record)) completed[key] = `${record[key]} y texto completado.`;
@@ -76,7 +110,7 @@ test('never replaces a local catalog that differs from the previous official one
   const { Catalog } = loadCatalog(async () => { fetched = true; return { ok: true, json: async () => data }; });
   const edited = Catalog.normalizeCatalog(data);
   edited[0].obs_toma = 'Edición local';
-  for (const version of ['ago2026-v2.1', 'respaldo-desconocido']) {
+  for (const version of ['ago2026-v2.1', 'ago2026-v2.2', 'respaldo-desconocido']) {
     const db = fakeDatabase(edited, version);
     const result = await Catalog.seedIfEmpty(db);
     assert.equal(result.updateAvailable, true);

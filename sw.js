@@ -1,7 +1,7 @@
 'use strict';
 
 const CACHE_PREFIX = 'oferta-correcciones-preanalitica-';
-const CACHE_NAME = `${CACHE_PREFIX}v7.0.3`;
+const CACHE_NAME = `${CACHE_PREFIX}v7.0.4`;
 const SCOPE_PATH = new URL(self.registration.scope).pathname;
 const APP_SHELL = [
   './',

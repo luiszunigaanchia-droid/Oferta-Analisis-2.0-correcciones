@@ -2,14 +2,15 @@
 
 (function exposeCatalog(global) {
   // Suba esta versión cada vez que cambie data.json.
-  const OFFICIAL_SOURCE_VERSION = 'ago2026-v2.2';
+  const OFFICIAL_SOURCE_VERSION = 'ago2026-v2.3';
   const OFFICIAL_SOURCE_LABEL = 'Catálogo Oferta Análisis HSJD (Versión Depurada)';
   // La versión en la URL evita que la caché del service worker entregue el archivo anterior.
   const OFFICIAL_SOURCE_URL = `./data.json?v=${OFFICIAL_SOURCE_VERSION}`;
   // SHA-256 de catálogos oficiales anteriores tal como quedan guardados en el dispositivo.
   // Una base local idéntica no tiene cambios propios y puede actualizarse sin perder datos.
   const PREVIOUS_OFFICIAL_FINGERPRINTS = Object.freeze({
-    'ago2026-v2.1': '2b3a32aeed33dcbe0c9594d5954f4f68e3aff89abe9a1e3d1c50459cd87f3ead'
+    'ago2026-v2.1': '2b3a32aeed33dcbe0c9594d5954f4f68e3aff89abe9a1e3d1c50459cd87f3ead',
+    'ago2026-v2.2': '7e1df5a5f2da824d28327c740637822231d2b1a6c9c34f13b80b881ea304eda0'
   });
   const MAX_RECORDS = 5000;
   const MAX_CENTERS = 1000;
@@ -419,16 +420,13 @@
     const entries = global.PreanalyticsIncompleteTexts?.[String(test?.id)] || [];
     return entries
       .filter(([key, ending]) => plainText(test[key]).replace(/\s+/g, ' ').endsWith(ending))
-      .map(([key, , maybeComplete]) => ({ key, label: FIELD_LABELS.get(key) || key, certain: !maybeComplete }));
+      .map(([key]) => ({ key, label: FIELD_LABELS.get(key) || key }));
   }
 
   function formatTestText(test, options = {}) {
     const incomplete = incompleteFields(test);
     const incompleteKeys = new Set(incomplete.map((field) => field.key));
     const lines = [`PRUEBA: ${test.nombre}`];
-    if (incomplete.length) {
-      lines.push(`AVISO: texto incompleto o posiblemente incompleto en: ${incomplete.map((field) => field.label).join(', ')}. Confirme con la sección responsable.`);
-    }
     if (options.center) {
       lines.push(`Centro seleccionado: ${options.center.nombre} (${options.center.codigo})`);
       if (options.center.unidadEjecutora) lines.push(`Unidad ejecutora: ${options.center.unidadEjecutora}`);
@@ -442,7 +440,7 @@
         .filter(([key]) => cleanText(test[key]) && !isUninformativeValue(test[key]))
         .map(([key, label]) => {
           const value = plainText(test[key]).split('\n').join('\n  ');
-          const mark = incompleteKeys.has(key) ? ' [REVISAR: TEXTO INCOMPLETO]' : '';
+          const mark = incompleteKeys.has(key) ? ' [texto incompleto en la fuente]' : '';
           return `- ${label}${mark}: ${value}`;
         });
       if (details.length) lines.push('', `[ ${section.title.toUpperCase()} ]`, ...details);
