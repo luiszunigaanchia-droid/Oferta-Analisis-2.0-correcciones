@@ -1,7 +1,9 @@
 'use strict';
 
 (function exposeDatabase(global) {
-  const DB_NAME = 'ofertanalisis_db';
+  // Nombres propios de esta copia: en github.io comparte origen con la página original.
+  // No lleve estos nombres al repositorio original: sus usuarios perderían de vista sus datos locales.
+  const DB_NAME = 'ofertanalisis_correcciones_db';
   const DB_VERSION = 3;
   const STORE_TESTS = 'tests';
   const STORE_CENTERS = 'centers';
@@ -9,7 +11,7 @@
   const STORE_AUDIT = 'audit';
   const DEFAULT_PIN = '1234';
   const PIN_ITERATIONS = 120000;
-  const SYNC_CHANNEL = 'ofertanalisis-preanalitica-sync';
+  const SYNC_CHANNEL = 'ofertanalisis-correcciones-sync';
 
   let dbPromise = null;
   let channel = null;

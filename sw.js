@@ -1,8 +1,7 @@
 'use strict';
 
-const CACHE_PREFIX = 'oferta-analisis2-preanalitica-';
+const CACHE_PREFIX = 'oferta-correcciones-preanalitica-';
 const CACHE_NAME = `${CACHE_PREFIX}v7.0.3`;
-const LEGACY_CACHES = new Set(['preanalitica-v1']);
 const SCOPE_PATH = new URL(self.registration.scope).pathname;
 const APP_SHELL = [
   './',
@@ -32,7 +31,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
     await Promise.all(keys
-      .filter((key) => (key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME) || LEGACY_CACHES.has(key))
+      .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
       .map((key) => caches.delete(key)));
     await self.clients.claim();
   })());
