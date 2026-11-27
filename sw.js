@@ -1,7 +1,7 @@
 'use strict';
 
 const CACHE_PREFIX = 'oferta-analisis2-preanalitica-';
-const CACHE_NAME = `${CACHE_PREFIX}v7.0.2`;
+const CACHE_NAME = `${CACHE_PREFIX}v7.0.3`;
 const LEGACY_CACHES = new Set(['preanalitica-v1']);
 const SCOPE_PATH = new URL(self.registration.scope).pathname;
 const APP_SHELL = [
@@ -10,6 +10,7 @@ const APP_SHELL = [
   './styles.css',
   './manifest.json',
   './js/db.js',
+  './js/textos-incompletos.js',
   './js/catalog.js',
   './js/app.js',
   './icons/icon.svg',
@@ -22,7 +23,9 @@ const APP_SHELL = [
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
+  // cache: 'reload' evita instalar copias antiguas guardadas en la caché HTTP.
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) =>
+    cache.addAll(APP_SHELL.map((url) => new Request(url, { cache: 'reload' })))));
 });
 
 self.addEventListener('activate', (event) => {

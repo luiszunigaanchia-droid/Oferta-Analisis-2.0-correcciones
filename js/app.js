@@ -276,7 +276,22 @@
     });
   }
 
-  function createField(key, label, value) {
+  function createIncompleteNotice(fields) {
+    const certain = fields.some((field) => field.certain);
+    const box = document.createElement('div');
+    box.className = 'condition-notice';
+    box.setAttribute('role', 'note');
+    const title = document.createElement('div');
+    title.className = 'condition-title';
+    title.textContent = certain ? '⚠️ Ficha con texto incompleto' : '⚠️ Ficha con texto posiblemente incompleto';
+    const body = document.createElement('div');
+    body.className = 'condition-body';
+    body.textContent = `Estos campos llegaron al límite de 255 caracteres del archivo de origen: ${fields.map((field) => field.label).join(', ')}. No los tome como completos; confirme con la sección responsable.`;
+    box.append(title, body);
+    return box;
+  }
+
+  function createField(key, label, value, incomplete) {
     const field = document.createElement('div');
     field.className = `field${Catalog.isCriticalValue(key, value) ? ' critical' : ''}`;
     const labelElement = document.createElement('div');
@@ -289,10 +304,23 @@
     appendFormattedText(valueElement, displayValue);
     
     field.append(labelElement, valueElement);
+    if (incomplete) {
+      const warning = document.createElement('div');
+      warning.className = 'field-warning';
+      warning.textContent = incomplete.certain
+        ? '⚠️ Texto cortado: falta el final. Confirme con la sección.'
+        : '⚠️ Texto posiblemente incompleto. Confirme con la sección.';
+      field.appendChild(warning);
+    }
     return field;
   }
 
   function buildCardDetails(details, test) {
+    // El encadenamiento opcional tolera un catalog.js anterior aún en caché durante la actualización.
+    const incomplete = Catalog.incompleteFields?.(test) || [];
+    const incompleteByKey = new Map(incomplete.map((field) => [field.key, field]));
+    if (incomplete.length) details.appendChild(createIncompleteNotice(incomplete));
+
     for (const section of Catalog.SECTIONS) {
       const populated = section.fields.filter(([key]) => {
         const val = test[key];
@@ -306,7 +334,7 @@
       heading.textContent = section.title;
       const grid = document.createElement('div');
       grid.className = 'field-grid';
-      for (const [key, label] of populated) grid.appendChild(createField(key, label, test[key]));
+      for (const [key, label] of populated) grid.appendChild(createField(key, label, test[key], incompleteByKey.get(key)));
       sectionElement.append(heading, grid);
       details.appendChild(sectionElement);
     }
@@ -420,6 +448,12 @@
         condTag.title = 'Requiere cumplimiento de condición';
         meta.appendChild(condTag);
       }
+    }
+
+    const incomplete = Catalog.incompleteFields?.(test) || [];
+    if (incomplete.length) {
+      const label = incomplete.some((field) => field.certain) ? '⚠️ Texto incompleto' : '⚠️ Revisar texto';
+      meta.appendChild(createTag(label, 'condition-tag'));
     }
 
     if (test.tipo_muestra && !Catalog.isUninformativeValue(test.tipo_muestra)) {
@@ -864,9 +898,10 @@
     try {
       const result = await Catalog.seedIfEmpty(DB);
       if (result.seeded) showToast(`Catálogo inicial cargado: ${result.count} pruebas.`, 'success');
+      if (result.autoUpdated) showToast('Catálogo actualizado con correcciones de transcripción.', 'success');
       if (result.updateAvailable) {
         state.catalogUpdateAvailable = true;
-        setCatalogNotice('Nueva versión oficial disponible', 'Sus datos locales no se modificaron. Desde Administración puede exportar un respaldo y restaurar explícitamente el catálogo oficial cuando corresponda.');
+        setCatalogNotice('Nueva versión oficial disponible', 'Incluye correcciones de transcripción que este dispositivo aún no tiene. Sus datos locales no se modificaron. Con conexión, cierre y vuelva a abrir la app; si el aviso continúa, desde Administración exporte un respaldo y restaure el catálogo oficial.');
       }
       await refreshData();
     } catch (error) {

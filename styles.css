@@ -542,6 +542,7 @@ th { position: sticky; top: 0; background: var(--surface-alt); color: var(--mute
   border-left: 4px solid #f59e0b;
 }
 .condition-title { font-weight: 750; font-size: 0.78rem; color: #92400e; margin-bottom: 2px; }
+.field-warning { margin-top: 6px; padding: 4px 8px; font-size: 0.76rem; font-weight: 700; color: #92400e; background: #fffbeb; border-left: 3px solid #f59e0b; }
 .condition-body { font-size: 0.84rem; color: #78350f; }
 
 @media (max-width: 768px) {
